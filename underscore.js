@@ -11,7 +11,7 @@
   // Establish the root object, `window` (`self`) in the browser, `global`
   // on the server, or `this` in some virtual machines. We use `self`
   // instead of `window` for `WebWorker` support.
-  var root = Function('return this')() ||
+  var root = typeof $ != 'undefined' && $.global && $.global.$ === $ && $.global ||
             {};
 
   // Save the previous value of the `_` variable.
