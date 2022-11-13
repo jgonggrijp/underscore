@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 
 <html>
@@ -842,8 +843,8 @@
         <li id="section-1">
             <div class="annotation">
               
-              <div class="sswrap ">
-                <a class="ss" href="#section-1">&#x00a7;</a>
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-1">&#182;</a>
               </div>
               
             </div>
@@ -858,8 +859,8 @@
         <li id="section-2">
             <div class="annotation">
               
-              <div class="sswrap ">
-                <a class="ss" href="#section-2">&#x00a7;</a>
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-2">&#182;</a>
               </div>
               <p>Internal helper to create a simple lookup structure.
 <code>collectNonEnumProps</code> used to depend on <code>_.contains</code>, but this led to
@@ -886,8 +887,8 @@ arrays of strings.</p>
         <li id="section-3">
             <div class="annotation">
               
-              <div class="sswrap ">
-                <a class="ss" href="#section-3">&#x00a7;</a>
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-3">&#182;</a>
               </div>
               <p>Internal helper. Checks <code>keys</code> for the presence of keys in IE &lt; 9 that won’t
 be iterated by <code>for key in ...</code> and thus missed. Extends <code>keys</code> in place if
@@ -907,8 +908,8 @@ needed.</p>
         <li id="section-4">
             <div class="annotation">
               
-              <div class="sswrap ">
-                <a class="ss" href="#section-4">&#x00a7;</a>
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-4">&#182;</a>
               </div>
               <p>Constructor is a special case.</p>
 
@@ -929,5 +930,48 @@ needed.</p>
         
     </ul>
   </div>
+  
+  <script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
+  <script>
+    // We run a script at page load to inject the links after the fact.
+    // It would be more elegant to do this at page generation time, but
+    // unfortunately the docco infrastructure doesn't support this very well.
+    // Highlighted code is passed along as an unparsed HTML string, which would
+    // make this very tricky. In the script below, we exploit the fact that the
+    // HTML has already been parsed by the browser.
+    (function() {
+      // Define a regex for stripping the .html extension from anchor hrefs.
+      var extPattern = /\.html$/;
+      // Collect all module paths that we have an HTML page for.
+      var moduleMap = {};
+      $('#jump_page a.source').each(function() {
+        // Fortunately, translating anchor hrefs to ES module paths is easy,
+        // because both systems work relative to the current file by default.
+        var href = $(this).attr('href');
+        var path = href.replace(extPattern, '').split('/');
+        if (path[0] !== '..') path.unshift('.');
+        var normPath = path.join('/');
+        // Support both paths with and without extension.
+        moduleMap[normPath] = moduleMap[normPath + '.js'] = href;
+      });
+      // Find all 'from' keywords followed by a string (ES6 import statements).
+      $('.hljs-keyword').filter(function() {
+        var text = $(this).text();
+        return text === 'from' || text === 'import';
+      }).next('.hljs-string').each(function() {
+        // Finally, for each of these strings, replace it by a link if we have
+        // a matching HTML page.
+        var text = $(this).text();
+        var quote = text[0];
+        var path = text.slice(1, -1);
+        var matchingDoc = moduleMap[path];
+        if (!matchingDoc) return;
+        $(this).html(
+          quote + '<a href="' + matchingDoc + '">' + path + '</a>' + quote
+        );
+      });
+    }());
+  </script>
+  
 </body>
 </html>
