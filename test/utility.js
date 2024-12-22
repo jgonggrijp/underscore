@@ -490,4 +490,11 @@
     assert.ok(_.isUndefined(_.templateSettings.variable), 'cleanup');
   });
 
+  QUnit.test('pipe', function(assert) {
+    function upper(string) { return string.toUpperCase(); }
+    function exclaim(string) { return string + '!'; }
+
+    assert.strictEqual(_.pipe('hello', upper, exclaim), 'HELLO!');
+  });
+
 }());
