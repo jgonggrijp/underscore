@@ -86,6 +86,7 @@ export { default as template } from './template.js';
 export { default as result } from './result.js';
 export { default as uniqueId } from './uniqueId.js';
 export { default as chain } from './chain.js';
+export { default as pipe } from './pipe.js';
 export { default as iteratee } from './iteratee.js';
 
 // Function (ahem) Functions

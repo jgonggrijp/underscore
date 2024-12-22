@@ -977,6 +977,49 @@ function chain(obj) {
   return instance;
 }
 
+// Internal helper for collection methods to determine whether a collection
+// should be iterated as an array or as an object.
+// Related: https://people.mozilla.org/~jorendorff/es6-draft.html#sec-tolength
+// Avoids a very nasty iOS 8 JIT bug on ARM-64. #2094
+var isArrayLike = createSizePropertyCheck(getLength);
+
+// Internal helper to create a reducing function, iterating left or right.
+function createReduce(dir) {
+  // Wrap code that reassigns argument variables in a separate function than
+  // the one that accesses `arguments.length` to avoid a perf hit. (#1991)
+  var reducer = function(obj, iteratee, memo, initial) {
+    var _keys = !isArrayLike(obj) && keys(obj),
+        length = (_keys || obj).length,
+        index = dir > 0 ? 0 : length - 1;
+    if (!initial) {
+      memo = obj[_keys ? _keys[index] : index];
+      index += dir;
+    }
+    for (; index >= 0 && index < length; index += dir) {
+      var currentKey = _keys ? _keys[index] : index;
+      memo = iteratee(memo, obj[currentKey], currentKey, obj);
+    }
+    return memo;
+  };
+
+  return function(obj, iteratee, memo, context) {
+    var initial = arguments.length >= 3;
+    return reducer(obj, optimizeCb(iteratee, context, 4), memo, initial);
+  };
+}
+
+// **Reduce** builds up a single result from a list of values, aka `inject`,
+// or `foldl`.
+var reduce = createReduce(1);
+
+function nextValue(previous, func) {
+  return func(previous);
+}
+
+var pipe = restArguments(function(value, funcs) {
+  return reduce(funcs, nextValue, value);
+});
+
 // Internal function to execute `sourceFunc` bound to `context` with optional
 // `args`. Determines whether to execute a function as a constructor or as a
 // normal function.
@@ -1017,12 +1060,6 @@ var bind = restArguments(function(func, context, args) {
   });
   return bound;
 });
-
-// Internal helper for collection methods to determine whether a collection
-// should be iterated as an array or as an object.
-// Related: https://people.mozilla.org/~jorendorff/es6-draft.html#sec-tolength
-// Avoids a very nasty iOS 8 JIT bug on ARM-64. #2094
-var isArrayLike = createSizePropertyCheck(getLength);
 
 // Internal implementation of a recursive `flatten` function.
 function flatten$1(input, depth, strict, output) {
@@ -1348,35 +1385,6 @@ function map(obj, iteratee, context) {
   }
   return results;
 }
-
-// Internal helper to create a reducing function, iterating left or right.
-function createReduce(dir) {
-  // Wrap code that reassigns argument variables in a separate function than
-  // the one that accesses `arguments.length` to avoid a perf hit. (#1991)
-  var reducer = function(obj, iteratee, memo, initial) {
-    var _keys = !isArrayLike(obj) && keys(obj),
-        length = (_keys || obj).length,
-        index = dir > 0 ? 0 : length - 1;
-    if (!initial) {
-      memo = obj[_keys ? _keys[index] : index];
-      index += dir;
-    }
-    for (; index >= 0 && index < length; index += dir) {
-      var currentKey = _keys ? _keys[index] : index;
-      memo = iteratee(memo, obj[currentKey], currentKey, obj);
-    }
-    return memo;
-  };
-
-  return function(obj, iteratee, memo, context) {
-    var initial = arguments.length >= 3;
-    return reducer(obj, optimizeCb(iteratee, context, 4), memo, initial);
-  };
-}
-
-// **Reduce** builds up a single result from a list of values, aka `inject`,
-// or `foldl`.
-var reduce = createReduce(1);
 
 // The right-associative version of reduce, also known as `foldr`.
 var reduceRight = createReduce(-1);
@@ -1942,6 +1950,7 @@ var allExports = {
   result: result,
   uniqueId: uniqueId,
   chain: chain,
+  pipe: pipe,
   iteratee: iteratee,
   partial: partial,
   bind: bind,
@@ -2127,6 +2136,7 @@ exports.pairs = pairs;
 exports.partial = partial;
 exports.partition = partition;
 exports.pick = pick;
+exports.pipe = pipe;
 exports.pluck = pluck;
 exports.property = property;
 exports.propertyOf = propertyOf;
